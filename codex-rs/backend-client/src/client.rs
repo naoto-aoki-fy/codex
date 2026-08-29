@@ -380,10 +380,24 @@ impl Client {
         environment_id: Option<&str>,
         cursor: Option<&str>,
     ) -> Result<PaginatedListTaskListItem> {
+        let (parsed, _body, _ct) = self
+            .list_tasks_with_body(limit, task_filter, environment_id, cursor)
+            .await?;
+        Ok(parsed)
+    }
+
+    pub async fn list_tasks_with_body(
+        &self,
+        limit: Option<i32>,
+        task_filter: Option<&str>,
+        environment_id: Option<&str>,
+        cursor: Option<&str>,
+    ) -> Result<(PaginatedListTaskListItem, String, String)> {
         let url = self.list_tasks_url(limit, task_filter, environment_id, cursor)?;
         let req = self.request(Method::GET, &url).headers(self.headers());
         let (body, ct) = self.exec_request(req, "GET", &url).await?;
-        self.decode_json::<PaginatedListTaskListItem>(&url, &ct, &body)
+        let parsed = self.decode_json::<PaginatedListTaskListItem>(&url, &ct, &body)?;
+        Ok((parsed, body, ct))
     }
 
     fn list_tasks_url(

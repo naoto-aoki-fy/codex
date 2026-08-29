@@ -384,6 +384,7 @@ mod tests {
                     updated_at: Utc::now(),
                     environment_id: env.map(str::to_string),
                     environment_label: None,
+                    branch: None,
                     summary: codex_cloud_tasks_client::DiffSummary::default(),
                     is_review: false,
                     attempt_total: Some(1),

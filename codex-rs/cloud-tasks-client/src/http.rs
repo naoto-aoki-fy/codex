@@ -165,16 +165,30 @@ mod api {
             cursor: Option<&str>,
         ) -> Result<TaskListPage> {
             let limit_i32 = limit.and_then(|lim| i32::try_from(lim).ok());
-            let resp = self
+            let (resp, body, content_type) = self
                 .backend
-                .list_tasks(limit_i32, Some("current"), env, cursor)
+                .list_tasks_with_body(limit_i32, Some("current"), env, cursor)
                 .await
                 .map_err(|e| CloudTaskError::Http(format!("list_tasks failed: {e}")))?;
+
+            let raw: RawTaskListPage = serde_json::from_str(&body).map_err(|e| {
+                CloudTaskError::Http(format!(
+                    "Decode error for task list: {e}; content-type={content_type}; body={body}"
+                ))
+            })?;
+            let branches = raw
+                .items
+                .into_iter()
+                .map(|item| (item.id, item.branch))
+                .collect::<HashMap<_, _>>();
 
             let tasks: Vec<TaskSummary> = resp
                 .items
                 .into_iter()
-                .map(map_task_list_item_to_summary)
+                .map(|item| {
+                    let branch = branches.get(&item.id).cloned().flatten();
+                    map_task_list_item_to_summary(item, branch)
+                })
                 .collect();
 
             append_error_log(&format!(
@@ -239,6 +253,10 @@ mod api {
                 .and_then(Value::as_str)
                 .map(str::to_string);
             let environment_label = env_label_from_status_display(status_display.as_ref());
+            let branch = task_obj
+                .get("branch")
+                .and_then(Value::as_str)
+                .map(str::to_string);
             let attempt_total = attempt_total_from_status_display(status_display.as_ref());
             let title = task_obj
                 .get("title")
@@ -256,6 +274,7 @@ mod api {
                 updated_at: parse_updated_at(updated_at_raw.as_ref()),
                 environment_id,
                 environment_label,
+                branch,
                 summary,
                 is_review,
                 attempt_total,
@@ -727,7 +746,22 @@ mod api {
         ))
     }
 
-    fn map_task_list_item_to_summary(src: backend::TaskListItem) -> TaskSummary {
+    #[derive(serde::Deserialize)]
+    struct RawTaskListPage {
+        items: Vec<RawTaskListItem>,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct RawTaskListItem {
+        id: String,
+        #[serde(default)]
+        branch: Option<String>,
+    }
+
+    fn map_task_list_item_to_summary(
+        src: backend::TaskListItem,
+        branch: Option<String>,
+    ) -> TaskSummary {
         let status_display = src.task_status_display.as_ref();
         TaskSummary {
             id: TaskId(src.id),
@@ -736,6 +770,7 @@ mod api {
             updated_at: parse_updated_at(src.updated_at.as_ref()),
             environment_id: None,
             environment_label: env_label_from_status_display(status_display),
+            branch,
             summary: diff_summary_from_status_display(status_display),
             is_review: src
                 .pull_requests

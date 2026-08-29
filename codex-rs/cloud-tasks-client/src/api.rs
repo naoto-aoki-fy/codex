@@ -43,6 +43,9 @@ pub struct TaskSummary {
     pub environment_id: Option<String>,
     /// Human-friendly environment label (when available)
     pub environment_label: Option<String>,
+    /// Git branch associated with the task (when available).
+    #[serde(default)]
+    pub branch: Option<String>,
     pub summary: DiffSummary,
     /// True when the backend reports this task as a code review.
     #[serde(default)]

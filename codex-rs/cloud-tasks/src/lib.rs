@@ -555,6 +555,7 @@ async fn run_list_command(args: crate::cli::ListCommand) -> anyhow::Result<()> {
                     "updated_at": task.updated_at,
                     "environment_id": task.environment_id,
                     "environment_label": task.environment_label,
+                    "branch": task.branch,
                     "summary": {
                         "files_changed": task.summary.files_changed,
                         "lines_added": task.summary.lines_added,
@@ -2240,6 +2241,7 @@ mod tests {
             updated_at: now,
             environment_id: Some("env-1".to_string()),
             environment_label: Some("Env".to_string()),
+            branch: None,
             summary: DiffSummary {
                 files_changed: 3,
                 lines_added: 5,
@@ -2269,6 +2271,7 @@ mod tests {
             updated_at: now,
             environment_id: Some("env-2".to_string()),
             environment_label: None,
+            branch: None,
             summary: DiffSummary::default(),
             is_review: false,
             attempt_total: Some(1),
@@ -2295,6 +2298,7 @@ mod tests {
                 updated_at: now,
                 environment_id: Some("env-1".to_string()),
                 environment_label: Some("Env".to_string()),
+                branch: None,
                 summary: DiffSummary {
                     files_changed: 3,
                     lines_added: 5,
@@ -2310,6 +2314,7 @@ mod tests {
                 updated_at: now,
                 environment_id: Some("env-2".to_string()),
                 environment_label: None,
+                branch: None,
                 summary: DiffSummary::default(),
                 is_review: false,
                 attempt_total: Some(1),

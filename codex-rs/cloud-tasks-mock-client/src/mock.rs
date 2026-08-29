@@ -57,6 +57,7 @@ impl MockClient {
                 updated_at: Utc::now(),
                 environment_id: environment_id.clone(),
                 environment_label: environment_label.clone(),
+                branch: Some("main".to_string()),
                 summary: DiffSummary {
                     files_changed: 1,
                     lines_added: a,
